@@ -11,70 +11,60 @@
 
 ## PROGRAM: 
 ```
-
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
-typedef uint64_t DES_Block;
-DES_Block initial_permutation(DES_Block block) {
-return block;
+typedef uint8_t AES_Block[16];
+void aes_encrypt_block(AES_Block plaintext, AES_Block key, AES_Block
+ciphertext) {
+for (int i = 0; i < 16; i++) {
+ciphertext[i] = plaintext[i] ^ key[i];
 }
-DES_Block final_permutation(DES_Block block) {
-return block;
 }
-DES_Block feistel_function(DES_Block right_half, DES_Block subkey) {
-return right_half ^ subkey;
+void aes_decrypt_block(AES_Block ciphertext, AES_Block key, AES_Block
+plaintext) {
+for (int i = 0; i < 16; i++) {
+plaintext[i] = ciphertext[i] ^ key[i];
 }
-DES_Block des_encrypt(DES_Block plaintext, DES_Block key) {
-DES_Block permuted_block = initial_permutation(plaintext);
-DES_Block left = permuted_block >> 32;
-DES_Block right = permuted_block & 0xFFFFFFFF;
-for (int round = 0; round < 16; round++) {
-DES_Block temp = right;
-right = left ^ feistel_function(right, key);
-left = temp;
 }
-DES_Block pre_output = (right << 32) | left;
-DES_Block ciphertext = final_permutation(pre_output);
-return ciphertext;
-}
-DES_Block des_decrypt(DES_Block ciphertext, DES_Block key) {
-return des_encrypt(ciphertext, key);
-}
-void process_url_encryption(const char* url, DES_Block key) {
+void process_url_aes_encryption(const char* url, AES_Block key) {
 size_t len = strlen(url);
-size_t blocks = len / 8;
-if (len % 8 != 0) blocks++;
+size_t blocks = len / 16;
+if (len % 16 != 0) blocks++;
 for (size_t i = 0; i < blocks; i++) {
-DES_Block plaintext = 0;
-char chunk[9] = {0}; // Only need 8 characters for each block, plus null
-terminator for safety
-strncpy(chunk, url + i * 8, 8); // Copy 8 characters to chunk
-memcpy(&plaintext, chunk, 8); // Copy only 8 bytes into plaintext
-DES_Block ciphertext = des_encrypt(plaintext, key);
-printf("Block %zu Encrypted: %lX\n", i, ciphertext);
-DES_Block decrypted = des_decrypt(ciphertext, key);
-// Copy decrypted block back into a string for printing
-char decrypted_chunk[9] = {0}; // Need 9 chars (8 bytes + null
-terminator)
-memcpy(decrypted_chunk, &decrypted, 8); // Copy back 8 bytes
-printf("Block %zu Decrypted: %s\n", i, decrypted_chunk);
+AES_Block plaintext = {0};
+AES_Block ciphertext = {0};
+AES_Block decrypted = {0};
+char chunk[17] = {0};
+strncpy(chunk, url + i * 16, 16);
+memcpy(plaintext, chunk, 16);
+aes_encrypt_block(plaintext, key, ciphertext);
+printf("Block %zu Encrypted: ", i);
+for (int j = 0; j < 16; j++) printf("%02X", ciphertext[j]);
+printf("\n");
+aes_decrypt_block(ciphertext, key, decrypted);
+printf("Block %zu Decrypted: ", i);
+for (int j = 0; j < 16 && decrypted[j] != '\0'; j++) {
+printf("%c", decrypted[j]);
+}
+printf("\n");
 }
 }
+
 int main() {
-printf("**************DES**************\n");
+printf("************* AES *************\n");
 const char* url = "https://shanmathi.com";
-DES_Block key = 0x133457799BBCDFF1;
+AES_Block key = {0x2B, 0x7E, 0x15, 0x16, 0x28, 0xAE, 0xD2, 0xA6,
+0xAB, 0xF7, 0xCF, 0x34, 0x12, 0x28, 0xEE, 0xF4};
 printf("Encrypting URL: %s\n", url);
-process_url_encryption(url, key);
+process_url_aes_encryption(url, key);
 return 0;
 }
 ```
 
 ## OUTPUT:
-
-![image](https://github.com/user-attachments/assets/3ceddff7-b78d-4f75-a1a4-017680ee9964)
+![image](https://github.com/user-attachments/assets/536fb090-3cfc-412d-98a5-6d05854b9294)
 
 
 ## RESULT: 
-Thus Data Encryption Standard (DES) Algorithm has been successfully excecuted
+Thus Advanced Encryption Standard (AES) Algorithm  has been successfully excecuted
